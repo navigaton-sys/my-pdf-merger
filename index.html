@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate PDF Expert Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-soft: #eef2ff;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --font-main: 'Inter', sans-serif;
+            --font-head: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg: #020617;
+            --card: #0f172a;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --border: #1e293b;
+            --primary-soft: #1e1b4b;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0; padding: 40px 20px;
+            transition: background 0.3s ease;
+            display: flex; justify-content: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%; max-width: 800px;
+            background: var(--card);
+            padding: 40px; border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute; top: 30px; right: 30px;
+            cursor: pointer; padding: 10px; border-radius: 14px;
+            background: var(--primary-soft); border: 1px solid var(--border);
+            color: var(--primary); display: flex; transition: 0.2s;
+        }
+        .theme-toggle:hover { transform: scale(1.05); }
+
+        header { margin-bottom: 40px; }
+        h1 { 
+            font-family: var(--font-head); 
+            font-size: 32px; font-weight: 800; 
+            letter-spacing: -0.02em; color: var(--text-main); margin: 0; 
+        }
+        header p { font-size: 15px; color: var(--text-sub); margin-top: 8px; font-weight: 500; }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            padding: 50px 20px; border-radius: 20px;
+            text-align: center; cursor: pointer;
+            transition: 0.3s; background: var(--bg);
+        }
+        .upload-zone:hover { border-color: var(--primary); background: var(--primary-soft); }
+        .upload-zone p { font-weight: 600; margin-top: 15px; font-size: 16px; }
+
+        /* File Items */
+        .file-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 18px; border: 1px solid var(--border);
+            border-radius: 18px; margin-bottom: 12px;
+            background: var(--card); transition: 0.2s;
+        }
+        .file-item:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+
+        .file-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+        .file-meta { font-size: 12px; color: var(--text-sub); font-weight: 500; margin-top: 4px; }
+
+        .page-input {
+            width: 130px; padding: 8px 12px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--bg); 
+            color: var(--text-main); font-family: var(--font-main);
+            font-size: 13px; font-weight: 500; outline: none;
+        }
+
+        .btn {
+            border: none; border-radius: 14px; font-weight: 600;
+            padding: 16px 24px; cursor: pointer; display: flex; 
+            align-items: center; gap: 10px; transition: 0.2s;
+            font-family: var(--font-main);
+        }
+        .btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; margin-top: 20px; font-size: 16px; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { background: var(--text-sub); cursor: wait; }
+
+        /* Modal Settings */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.7); display: none;
+            justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(6px);
+        }
+        .modal {
+            position: relative;
+            background: var(--card); padding: 45px 35px 35px; border-radius: 28px;
+            max-width: 420px; width: 90%; text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal-close {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: var(--text-sub);
+            cursor: pointer; padding: 5px; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close:hover { color: var(--text-main); transform: rotate(90deg); }
+
+        .modal-btns { display: flex; gap: 12px; margin-top: 30px; justify-content: center; }
+
+        .spinner { animation: spin 1s linear infinite; width: 20px; height: 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body data-theme="light">
+
+<div class="container">
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">
+        <i data-lucide="moon"></i>
+    </button>
+
+    <header>
+        <h1>PDF Merger Expert</h1>
+        <p>Simple. Fast. Professional PDF Management.</p>
+    </header>
+
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <i data-lucide="plus-circle" style="width: 44px; height: 44px; color: var(--primary);"></i>
+        <p>Drop files here or click to browse</p>
+    </div>
+    <input type="file" id="fileInput" class="hidden" multiple accept="application/pdf">
+
+    <div id="fileList" style="margin-top: 25px;"></div>
+
+    <div id="footerTools" class="hidden">
+        <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 13px; font-weight: 600; color: var(--text-sub);">Export Name</label>
+                    <input type="text" id="outputName" value="merged_document.pdf" 
+                           style="width: 90%; padding: 14px; margin-top: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); box-sizing: border-box; font-family: var(--font-main); font-weight: 500;">
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--text-sub);">Est. Total Size</div>
+                    <div id="totalSizeDisplay" style="font-size: 20px; font-weight: 800; color: var(--primary);">0 KB</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" id="mergeBtn" onclick="showCompressionModal()">
+                <i data-lucide="arrow-right-circle"></i> Merge and Save PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">
+            <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+        </button>
+
+        <div style="background: var(--primary-soft); width: 64px; height: 64px; border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i data-lucide="zap" style="color: var(--primary); width: 32px; height: 32px;"></i>
+        </div>
+
+        <h3 style="font-family: var(--font-head); margin: 0;">Ready to Merge?</h3>
+        <p style="font-size: 14px; color: var(--text-sub); margin-top: 8px;">Select your preferred output quality.</p>
+
+        <div class="modal-btns">
+            <button class="btn" style="background: var(--bg); color: var(--text-main); border: 1px solid var(--border); min-width: 140px;" onclick="startMerge(false)">
+                Original Size
+            </button>
+            <button class="btn" style="background: var(--primary); color: white; min-width: 140px;" onclick="startMerge(true)">
+                Compress File
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    let filesArray = [];
+
+    // --- Theme Control ---
+    function toggleTheme() {
+        const body = document.body;
+        const isLight = body.getAttribute('data-theme') === 'light';
+        body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+        document.getElementById('themeBtn').innerHTML = `<i data-lucide="${isLight ? 'sun' : 'moon'}"></i>`;
+        lucide.createIcons();
+    }
+
+    // --- Utility: Format Size ---
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // --- File Input Handler ---
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const selectedFiles = Array.from(e.target.files);
+        for (const file of selectedFiles) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                filesArray.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    file,
+                    totalPages: pdf.getPageCount(),
+                    size: file.size
+                });
+            } catch (err) {
+                alert(`Error: ${file.name} is not a valid PDF.`);
+            }
+        }
+        updateUI();
+        e.target.value = '';
+    });
+
+    function updateUI() {
+        const list = document.getElementById('fileList');
+        list.innerHTML = '';
+        let totalSize = 0;
+
+        filesArray.forEach(item => {
+            totalSize += item.size;
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `
+                <div style="cursor:grab; color: var(--text-sub);"><i data-lucide="grip-vertical" style="width:18px;"></i></div>
+                <div style="flex:1">
+                    <div class="file-name">${item.file.name}</div>
+                    <div class="file-meta">${item.totalPages} pages • ${formatBytes(item.size)}</div>
+                    <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:12px; font-weight:600; color:var(--text-sub);">Extract:</span>
+                        <input type="text" class="page-input" id="pages-${item.id}" placeholder="e.g. 1-2, 5">
+                    </div>
+                </div>
+                <button onclick="removeFile('${item.id}')" style="background:none; border:none; color:var(--text-sub); cursor:pointer; padding:8px;"><i data-lucide="trash-2" style="width:20px;"></i></button>
+            `;
+            list.appendChild(div);
+        });
+
+        document.getElementById('footerTools').classList.toggle('hidden', filesArray.length === 0);
+        document.getElementById('totalSizeDisplay').innerText = formatBytes(totalSize);
+        lucide.createIcons();
+
+        // Drag & Drop Sorting
+        new Sortable(list, { 
+            animation: 200, 
+            handle: '.lucide-grip-vertical',
+            onEnd: (evt) => {
+                const movedItem = filesArray.splice(evt.oldIndex, 1)[0];
+                filesArray.splice(evt.newIndex, 0, movedItem);
+            }
+        });
+    }
+
+    function removeFile(id) {
+        filesArray = filesArray.filter(f => f.id !== id);
+        updateUI();
+    }
+
+    // --- Modal Control ---
+    function showCompressionModal() {
+        if(filesArray.length === 0) return;
+        document.getElementById('modalOverlay').style.display = 'flex';
+        lucide.createIcons();
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    // --- Core Merge Logic ---
+    async function startMerge(shouldCompress) {
+        closeModal();
+        const btn = document.getElementById('mergeBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:10px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg> Processing PDF...`;
+
+        try {
+            const mergedPdf = await PDFLib.PDFDocument.create();
+            
+            for (const item of filesArray) {
+                const arrayBuffer = await item.file.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                const pageRange = document.getElementById(`pages-${item.id}`).value.trim();
+                
+                let pagesToCopy = [];
+                if (!pageRange) {
+                    pagesToCopy = Array.from({length: item.totalPages}, (_, i) => i);
+                } else {
+                    pageRange.split(',').forEach(part => {
+                        if (part.includes('-')) {
+                            const [start, end] = part.split('-').map(Number);
+                            for (let i = start; i <= end; i++) {
+                                if (i >= 1 && i <= item.totalPages) pagesToCopy.push(i - 1);
+                            }
+                        } else {
+                            const p = Number(part.trim());
+                            if (p >= 1 && p <= item.totalPages) pagesToCopy.push(p - 1);
+                        }
+                    });
+                }
+                
+                if (pagesToCopy.length > 0) {
+                    const copiedPages = await mergedPdf.copyPages(pdf, pagesToCopy);
+                    copiedPages.forEach(p => mergedPdf.addPage(p));
+                }
+            }
+
+            // Apply Compression if selected
+            const pdfBytes = await mergedPdf.save({ 
+                useObjectStreams: shouldCompress,
+                addDefaultPage: false 
+            });
+
+            const blob = new Blob([pdfBytes], { type: "application/pdf" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = document.getElementById('outputName').value || 'merged_result.pdf';
+            link.click();
+
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred while merging files.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="arrow-right-circle"></i> Merge and Save PDF`;
+            lucide.createIcons();
+        }
+    }
+</script>
+
+</body>
+</html>
